@@ -48,3 +48,43 @@ class C780AOMConv(UnitConversion):
         
     def relpwr_from_base(self,volts):
         return self.volts_to_rel_pwr(volts)
+
+
+class C780AOMFreqConv(UnitConversion):
+    base_unit = 'V'
+    derived_units = ['MHz']
+    
+    def __init__(self, calibration_parameters=None):
+        # These parameters are loaded from a globals.h5 type file automatically
+        if calibration_parameters is None:
+            calibration_parameters = {}
+        self.parameters = calibration_parameters
+        
+        UnitConversion.__init__(self,self.parameters)
+        #Left column: voltage 
+        #Right column: Frequency [MHz]
+        self.calib = np.array([[0.0, 106.3],
+                               [0.05, 108.5],
+                               [0.10, 110.6],
+                               [0.15, 112.8],
+                               [0.20, 115.0],
+                               [0.25, 117.2],
+                               [0.3,  119.4],
+                               [0.35, 121.5],
+                               [0.4,  123.7],
+                               [0.45, 125.9],
+                               [0.5,  128.1]])
+        self.volts_calib = self.calib[:,0]
+        self.MHz_calib = self.calib[:,1]
+        self.volts_to_MHz = interp1d(self.volts_calib, self.MHz_calib, bounds_error=False, fill_value=(self.MHz_calib[0],self.MHz_calib[-1]))
+        self.MHz_to_volts = interp1d(self.MHz_calib, self.volts_calib, bounds_error=False, fill_value=(self.volts_calib[0], self.volts_calib[-1]))
+        # We should probably also store some hardware limits here, and use them accordingly 
+        # (or maybe load them from a globals file, or specify them in the connection table?)
+
+    def MHz_to_base(self,relpwr):
+        return self.MHz_to_volts(relpwr)
+        
+    def MHz_from_base(self,volts):
+        return self.volts_to_MHz(volts)
+
+
